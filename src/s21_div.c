@@ -1,180 +1,323 @@
 #include "s21_decimal.h"
 
-static int divide_by_10(s21_decimal *result){
-    int res = 0;
-    uint64_t current = (uint32_t)result->bits[2];
-    result->bits[2] = current / 10;
-    uint32_t remainder = current % 10;
-
-    current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[1];
-    result->bits[1] = current / 10;
-    remainder = current % 10;
-
-    current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[0];
-    result->bits[0] = current / 10;
-    remainder = current % 10;
-    if (remainder != 0){
-        res = 1;
+static int compare_mantissa(s21_decimal value_2, s21_decimal* remainder) {
+  int quotient = 0;
+  if ((uint32_t)remainder->bits[2] > (uint32_t)value_2.bits[2]) {
+    quotient = 1;
+  } else if ((uint32_t)remainder->bits[2] == (uint32_t)value_2.bits[2]) {
+    if ((uint32_t)remainder->bits[1] > (uint32_t)value_2.bits[1]) {
+      quotient = 1;
+    } else if ((uint32_t)remainder->bits[1] == (uint32_t)value_2.bits[1]) {
+      if ((uint32_t)remainder->bits[0] >= (uint32_t)value_2.bits[0]) {
+        quotient = 1;
+      }
     }
-
-    return res;
+  }
+  return quotient;
 }
 
-static int add_one(s21_decimal *result){
-    int res = 0;
-    uint64_t current = (uint32_t)result->bits[0] + 1;
+static uint32_t subtract_mantissa(s21_decimal value_2, s21_decimal* remainder) {
+  uint64_t sub;
+  uint32_t borrow = 0;
+
+  uint32_t a = (uint32_t)remainder->bits[0];
+  uint32_t b = (uint32_t)value_2.bits[0];
+
+  borrow = a < b;
+  remainder->bits[0] = a - b;
+
+  a = (uint32_t)remainder->bits[1];
+  b = (uint32_t)value_2.bits[1];
+
+  sub = (uint64_t)b + borrow;
+  borrow = (uint64_t)a < sub;
+  remainder->bits[1] = (uint32_t)((uint64_t)a - sub);
+
+  a = (uint32_t)remainder->bits[2];
+  b = (uint32_t)value_2.bits[2];
+
+  sub = (uint64_t)b + borrow;
+  borrow = (uint64_t)a < sub;
+  remainder->bits[2] = (uint32_t)((uint64_t)a - sub);
+
+  return borrow;
+}
+
+// первый цикл
+static void divide_integer_part(s21_decimal value_1, s21_decimal value_2,
+                                s21_decimal* result, s21_decimal* remainder) {
+  int i = 95;
+  while (i >= 0) {
+    int index = i / 32;
+    int offset = i % 32;
+    int bit = ((uint32_t)value_1.bits[index] >> offset) & 1;
+
+    uint64_t current;
+
+    current = ((uint64_t)remainder->bits[0] << 1) | bit;
+    remainder->bits[0] = (uint32_t)current;
+    uint32_t carry = current >> 32;
+
+    current = ((uint64_t)remainder->bits[1] << 1) | carry;
+    remainder->bits[1] = (uint32_t)current;
+    carry = current >> 32;
+
+    current = ((uint64_t)remainder->bits[2] << 1) | carry;
+    remainder->bits[2] = (uint32_t)current;
+
+    int x = compare_mantissa(value_2, remainder);
+    if (x) {
+      subtract_mantissa(value_2, remainder);
+    }
+
+    current = ((uint64_t)result->bits[0] << 1) | x;
     result->bits[0] = current & 0xFFFFFFFF;
-    uint32_t x = current >> 32;
-    if (x){
-        current = (uint32_t)result->bits[1] + 1;
-        result->bits[1] = current & 0xFFFFFFFF;
-        x = current >> 32;
-        if (x){
-            current = (uint32_t)result->bits[2] + 1;
-            result->bits[2] = current & 0xFFFFFFFF;
-            x = current >> 32;
-            if (x){
-                res = 1;
-            }
-        }
-    }
-    return res;
 
+    current = ((uint64_t)result->bits[1] << 1) | (current >> 32);
+    result->bits[1] = current & 0xFFFFFFFF;
+
+    current = ((uint64_t)result->bits[2] << 1) | (current >> 32);
+    result->bits[2] = current & 0xFFFFFFFF;
+
+    i--;
+  }
 }
 
-int s21_truncate(s21_decimal value, s21_decimal *result){
-    int res = 0;
-    uint32_t scale = ((uint32_t)value.bits[3] >> 16) & 0xFF;
+static uint32_t multiply_mantissa_by_10(s21_decimal* remainder,
+                                        uint32_t digit) {
+  uint64_t current = (uint32_t)remainder->bits[0] * 10 + digit;
+  remainder->bits[0] = (uint32_t)current;
+  uint32_t carry = current >> 32;
 
-    for (int i = 0; i<4; i++){
-        result->bits[i] = value.bits[i];
-    }
-    int i = 0;
-    while(i < scale && res == 0) {
-        divide_by_10(result);
-        i++;
-    }
-    unsigned int sign = ((uint32_t)value.bits[3] >> 31) & 0x1;
-    result->bits[3] = sign << 31;
+  current = (uint32_t)remainder->bits[1] * 10 + carry;
+  remainder->bits[1] = (uint32_t)current;
+  carry = current >> 32;
 
-    return res;
+  current = (uint32_t)remainder->bits[2] * 10 + carry;
+  remainder->bits[2] = (uint32_t)current;
+  carry = current >> 32;
+
+  return carry;
 }
 
-int s21_floor(s21_decimal value, s21_decimal *result){
-    int res = 0;
-    int ost = 0;
-    uint32_t scale = ((uint32_t)value.bits[3] >> 16) & 0xFF;
-    uint32_t sign = ((uint32_t)value.bits[3] >> 31) & 0x1;
+static uint32_t divide_by_10_with_high(s21_decimal* result, uint32_t high) {
+  uint64_t current;
+  uint32_t remainder;
 
-    for (int i = 0; i<4; i++){
-        result->bits[i] = value.bits[i];
-    }
-    int i = 0;
-    while(i < scale && res == 0) {
-        if (divide_by_10(result) == 1) {
-            ost = 1;
-        }
-        i++;
-    }
-    result->bits[3] = sign << 31;
-        
-    if (sign != 0 && ost == 1){
-        if (add_one(result) != 0){
-            res = 1;
-        }
-    }
+  current = ((uint64_t)high << 32) | (uint32_t)result->bits[2];
+  result->bits[2] = current / 10;
+  remainder = current % 10;
 
-    return res;
+  current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[1];
+  result->bits[1] = current / 10;
+  remainder = current % 10;
+
+  current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[0];
+  result->bits[0] = current / 10;
+  remainder = current % 10;
+
+  return remainder;
 }
 
+static void round_overflow_result(s21_decimal* result, s21_decimal remainder,
+                                  uint32_t remainder_10, int* res) {
+  if (remainder_10 > 5 || (remainder_10 == 5 &&
+                           (((uint32_t)result->bits[0] & 1) ||
+                            (remainder.bits[0] != 0 || remainder.bits[1] != 0 ||
+                             remainder.bits[2] != 0)))) {
+    s21_decimal temp = *result;
+    if (add_one(&temp) == 0) {
+      *result = temp;
+    } else {
+      *res = 1;
+    }
+  }
+}
 
-int s21_div(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
-    int res = 0;
-    s21_decimal remainder = {0};
+// второй цикл
+static void calculate_fraction_part(s21_decimal value_2, s21_decimal* result,
+                                    s21_decimal* remainder, int* scale,
+                                    int* overflow, int* res) {
+  while ((remainder->bits[0] != 0 || remainder->bits[1] != 0 ||
+          remainder->bits[2] != 0) &&
+         *scale < 28 && *res == 0 && *overflow == 0) {
+    uint32_t remainder_high = 0;
+    uint32_t carry = multiply_mantissa_by_10(remainder, 0);
 
+    if (carry != 0) {
+      remainder_high = carry;
+    }
+
+    int digit = 0;
+    int greater = 1;
+
+    while (digit < 10 && greater == 1) {
+      greater = 0;
+      if (remainder_high != 0) {
+        greater = 1;
+      } else if (compare_mantissa(value_2, remainder)) {
+        greater = 1;
+      }
+      if (greater) {
+        uint32_t borrow = subtract_mantissa(value_2, remainder);
+        remainder_high -= borrow;
+        digit++;
+      }
+    }
+    carry = multiply_mantissa_by_10(result, digit);
+
+    if (carry != 0) {
+      *overflow = 1;
+      uint32_t remainder_10 = divide_by_10_with_high(result, carry);
+      round_overflow_result(result, *remainder, remainder_10, res);
+      (*scale)--;
+    } else {
+      (*scale)++;
+    }
+  }
+}
+
+static int compare_twice_remainder(s21_decimal remainder, s21_decimal divisor) {
+  uint64_t current;
+  uint32_t carry;
+
+  current = (uint64_t)(uint32_t)remainder.bits[0] << 1;
+  uint32_t low = (uint32_t)current;
+  carry = current >> 32;
+
+  current = (uint64_t)(uint32_t)remainder.bits[1] << 1 | carry;
+  uint32_t mid = (uint32_t)current;
+  carry = current >> 32;
+
+  current = (uint64_t)(uint32_t)remainder.bits[2] << 1 | carry;
+  uint32_t high = (uint32_t)current;
+  uint32_t high_carry = current >> 32;
+
+  if (high_carry > 0) {
+    return 1;
+  }
+
+  if (high > (uint32_t)divisor.bits[2]) {
+    return 1;
+  }
+  if (high < (uint32_t)divisor.bits[2]) {
+    return -1;
+  }
+
+  if (mid > (uint32_t)divisor.bits[1]) {
+    return 1;
+  }
+  if (mid < (uint32_t)divisor.bits[1]) {
+    return -1;
+  }
+
+  if (low > (uint32_t)divisor.bits[0]) {
+    return 1;
+  }
+  if (low < (uint32_t)divisor.bits[0]) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static uint32_t divide_by_10_with_bankers_rounding(s21_decimal* result) {
+  uint32_t remainder = divide_by_10(result);
+
+  if ((remainder > 5) || (remainder == 5 && ((uint32_t)result->bits[0] & 1))) {
+    add_one(result);
+  }
+  return remainder;
+}
+
+// проверка на scale == 28 и остаток != 0 и overflow != 1
+static void round_division_result(s21_decimal* result, s21_decimal remainder,
+                                  s21_decimal value_2, int* scale, int overflow,
+                                  int* res) {
+  if (*scale == 28 &&
+      (remainder.bits[0] != 0 || remainder.bits[1] != 0 ||
+       remainder.bits[2] != 0) &&
+      overflow != 1) {
+    int comparison = compare_twice_remainder(remainder, value_2);
+    if (comparison > 0 ||
+        (comparison == 0 && ((uint32_t)result->bits[0] & 1))) {
+      s21_decimal temp = *result;
+      if (add_one(&temp) == 0) {
+        *result = temp;
+      } else {
+        divide_by_10_with_bankers_rounding(result);
+        (*scale)--;
+      }
+    }
+    if (result->bits[0] == 0 && result->bits[1] == 0 && result->bits[2] == 0) {
+      *res = 2;
+    }
+  }
+}
+
+static void normalize_negative_scale(s21_decimal* result, int* scale,
+                                     int* res) {
+  while (*scale < 0 && *res == 0) {
+    uint64_t current = (uint32_t)result->bits[0] * 10;
+    result->bits[0] = (uint32_t)current;
+    uint32_t carry = current >> 32;
+
+    current = (uint32_t)result->bits[1] * 10 + carry;
+    result->bits[1] = (uint32_t)current;
+    carry = current >> 32;
+
+    current = (uint32_t)result->bits[2] * 10 + carry;
+    result->bits[2] = (uint32_t)current;
+    carry = current >> 32;
+    if (carry != 0) {
+      *res = 1;
+    }
+    (*scale)++;
+  }
+}
+
+// главныя функция деления
+int s21_div(s21_decimal value_1, s21_decimal value_2, s21_decimal* result) {
+  int res = 0;
+  int overflow = 0;
+  s21_decimal remainder = {0};
+  result->bits[0] = 0;
+  result->bits[1] = 0;
+  result->bits[2] = 0;
+
+  if (value_2.bits[0] == 0 && value_2.bits[1] == 0 && value_2.bits[2] == 0) {
+    res = 3;
+  }
+  if (res == 0) {
+    divide_integer_part(value_1, value_2, result, &remainder);
+  }
+  int scale = 0;
+  if (res == 0) {
+    uint32_t scale_1 = ((uint32_t)value_1.bits[3] >> 16) & 0xFF;
+    uint32_t scale_2 = ((uint32_t)value_2.bits[3] >> 16) & 0xFF;
+    scale = (int)scale_1 - (int)scale_2;
+  }
+
+  calculate_fraction_part(value_2, result, &remainder, &scale, &overflow, &res);
+
+  normalize_negative_scale(result, &scale, &res);
+  round_division_result(result, remainder, value_2, &scale, overflow, &res);
+
+  uint32_t sign_1 = ((uint32_t)value_1.bits[3] >> 31) & 1;
+  uint32_t sign_2 = ((uint32_t)value_2.bits[3] >> 31) & 1;
+
+  uint32_t sign = sign_1 ^ sign_2;
+
+  if (res == 1 && sign != 0) {
+    res = 2;
+  }
+  if (res != 0) {
     result->bits[0] = 0;
     result->bits[1] = 0;
     result->bits[2] = 0;
-    if (value_2.bits[0] == 0 &&
-        value_2.bits[1] == 0 &&
-        value_2.bits[2] == 0) {
-        res = 3;
-    }
-    int i = 95;
-    while (i >= 0 && res == 0) {
-        int index = i / 32;
-        int offset = i % 32;
-        int bit = ((uint32_t)value_1.bits[index] >> offset) & 1;
-
-        uint64_t current;
-
-        current = ((uint64_t)remainder.bits[0] << 1) | bit;
-        remainder.bits[0] = (uint32_t)current;
-        uint32_t carry = current >> 32;
-
-        current = ((uint64_t)remainder.bits[1] << 1) | carry;
-        remainder.bits[1] = (uint32_t)current;
-        carry = current >> 32;
-
-        current = ((uint64_t)remainder.bits[2] << 1) | carry;
-        remainder.bits[2] = (uint32_t)current;
-
-
-        int quotient = 0;
-        if ((uint32_t)remainder.bits[2] > (uint32_t)value_2.bits[2]) {
-            quotient = 1;
-        } else if ((uint32_t)remainder.bits[2] == (uint32_t)value_2.bits[2]) {
-            if ((uint32_t)remainder.bits[1] > (uint32_t)value_2.bits[1]) {
-                quotient = 1;
-            } else if ((uint32_t)remainder.bits[1] == (uint32_t)value_2.bits[1]) {
-                if ((uint32_t)remainder.bits[0] >= (uint32_t)value_2.bits[0]) {
-                    quotient = 1;
-                }
-            }
-        }
-        if (quotient) {
-            uint64_t sub;
-            uint32_t borrow = 0;
-
-            uint32_t a = (uint32_t)remainder.bits[0];
-            uint32_t b = (uint32_t)value_2.bits[0];
-
-            borrow = a < b;
-            remainder.bits[0] = a - b;
-
-            a = (uint32_t)remainder.bits[1];
-            b = (uint32_t)value_2.bits[1];
-
-            sub = (uint64_t)b + borrow;
-            borrow = (uint64_t)a < sub;
-            remainder.bits[1] = (uint32_t)((uint64_t)a - sub);
-
-            a = (uint32_t)remainder.bits[2];
-            b = (uint32_t)value_2.bits[2];
-
-            sub = (uint64_t)b + borrow;
-            remainder.bits[2] = (uint32_t)((uint64_t)a - sub);
-        }
-        
-        current = ((uint64_t)result->bits[0] << 1) | quotient;
-        result->bits[0] = current & 0xFFFFFFFF;
-
-        current = ((uint64_t)result->bits[1] << 1) | (current >> 32);
-        result->bits[1] = current & 0xFFFFFFFF;
-
-        current = ((uint64_t)result->bits[2] << 1) | (current >> 32);
-        result->bits[2] = current & 0xFFFFFFFF;
-
-        i--;
-    }
-    uint32_t sign_1 = ((uint32_t)value_1.bits[3] >> 32) & 1;
-    uint32_t scale_1 = ((uint32_t)value_1.bits[3] >> 16) & 0xFF;
-    uint32_t sign_2 = ((uint32_t)value_2.bits[3] >> 32) & 1;
-    uint32_t scale_2 = ((uint32_t)value_2.bits[3] >> 16) & 0xFF;
-    if (sign_1 == 1 && sign_2 == 1) {
-        result->bits[3] = 0;
-    } else {
-        result->bits[3] = sign_1 | sign_2 << 32;
-    }
-    return res;
+    result->bits[3] = 0;
+  } else {
+    result->bits[3] = (sign << 31) | ((uint32_t)scale << 16);
+  }
+  return res;
 }
