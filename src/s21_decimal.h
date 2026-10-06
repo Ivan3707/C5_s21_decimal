@@ -15,4 +15,9 @@ int s21_round(s21_decimal value, s21_decimal *result);
 int add_one(s21_decimal* result);
 uint32_t divide_by_10(s21_decimal* result);
 
+int s21_get_sign(s21_decimal value);
+int s21_get_scale(s21_decimal value);
+void s21_set_sign(s21_decimal* value, int sign);
+void s21_zero(s21_decimal* value);
+
 #endif
