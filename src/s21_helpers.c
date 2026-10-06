@@ -3,15 +3,15 @@
 #define S21_DECIMAL_WORDS 4
 
 uint32_t divide_by_10(s21_decimal* result) {
-  uint64_t current = (uint32_t)result->bits[2];
+  uint64_t current = (uint64_t)(uint32_t)result->bits[2];
   result->bits[2] = current / 10;
   uint32_t remainder = current % 10;
 
-  current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[1];
+  current = ((uint64_t)remainder << 32) | (uint64_t)(uint32_t)result->bits[1];
   result->bits[1] = current / 10;
   remainder = current % 10;
 
-  current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[0];
+  current = ((uint64_t)remainder << 32) | (uint64_t)(uint32_t)result->bits[0];
   result->bits[0] = current / 10;
   remainder = current % 10;
 
@@ -19,24 +19,21 @@ uint32_t divide_by_10(s21_decimal* result) {
 }
 
 int add_one(s21_decimal* result) {
-  int res = 0;
-  uint64_t current = (uint32_t)result->bits[0] + 1;
-  result->bits[0] = current & 0xFFFFFFFF;
-  uint32_t x = current >> 32;
-  if (x) {
-    current = (uint32_t)result->bits[1] + 1;
-    result->bits[1] = current & 0xFFFFFFFF;
-    x = current >> 32;
-    if (x) {
-      current = (uint32_t)result->bits[2] + 1;
-      result->bits[2] = current & 0xFFFFFFFF;
-      x = current >> 32;
-      if (x) {
-        res = 1;
-      }
-    }
-  }
-  return res;
+  uint64_t current;
+
+  current = (uint64_t)(uint32_t)result->bits[0] + 1ULL;
+  result->bits[0] = (uint32_t)current;
+  uint32_t carry = (uint32_t)(current >> 32);
+
+  current = (uint64_t)(uint32_t)result->bits[1] + carry;
+  result->bits[1] = (uint32_t)current;
+  carry = (uint32_t)(current >> 32);
+
+  current = (uint64_t)(uint32_t)result->bits[2] + carry;
+  result->bits[2] = (uint32_t)current;
+  carry = (uint32_t)(current >> 32);
+
+  return carry;
 }
 
 int s21_get_sign(s21_decimal value) {

@@ -40,6 +40,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJ)
 	$(AR) $(ARFLAGS) $@ $^
+	rm -f $(OBJ)
 
 %.o: %.c s21_decimal.h
 	$(CC) $(CFLAGS) -c $< -o $@

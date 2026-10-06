@@ -1,9 +1,9 @@
 #include <check.h>
+
 #include "s21_decimal.h"
 
-static s21_decimal make_decimal(uint32_t bits0, uint32_t bits1,
-                                uint32_t bits2, uint32_t scale,
-                                uint32_t sign) {
+static s21_decimal make_decimal(uint32_t bits0, uint32_t bits1, uint32_t bits2,
+                                uint32_t scale, uint32_t sign) {
   s21_decimal value = {{0, 0, 0, 0}};
 
   value.bits[0] = bits0;
@@ -19,10 +19,8 @@ static s21_decimal make_decimal(uint32_t bits0, uint32_t bits1,
 }
 
 static int decimal_equal(s21_decimal a, s21_decimal b) {
-  return a.bits[0] == b.bits[0] &&
-         a.bits[1] == b.bits[1] &&
-         a.bits[2] == b.bits[2] &&
-         a.bits[3] == b.bits[3];
+  return a.bits[0] == b.bits[0] && a.bits[1] == b.bits[1] &&
+         a.bits[2] == b.bits[2] && a.bits[3] == b.bits[3];
 }
 
 /* ==================== truncate ==================== */
@@ -290,13 +288,7 @@ START_TEST(test_round_null) {
 END_TEST
 
 START_TEST(test_round_large_mantissa) {
-  s21_decimal value = make_decimal(
-      0xFFFFFFF7,
-      0xFFFFFFFF,
-      9,
-      1,
-      0
-  );
+  s21_decimal value = make_decimal(0xFFFFFFF7, 0xFFFFFFFF, 9, 1, 0);
   s21_decimal result = {{0}};
 
   ck_assert_int_eq(s21_round(value, &result), 0);
@@ -323,10 +315,10 @@ END_TEST
 
 /* ==================== suite ==================== */
 
-Suite *s21_other_suite(void) {
-  Suite *suite = suite_create("s21_other");
+Suite* s21_other_suite(void) {
+  Suite* suite = suite_create("s21_other");
 
-  TCase *tc_truncate = tcase_create("truncate");
+  TCase* tc_truncate = tcase_create("truncate");
   tcase_add_test(tc_truncate, test_truncate_positive);
   tcase_add_test(tc_truncate, test_truncate_negative);
   tcase_add_test(tc_truncate, test_truncate_without_fraction);
@@ -334,26 +326,23 @@ Suite *s21_other_suite(void) {
   tcase_add_test(tc_truncate, test_truncate_null);
   tcase_add_test(tc_truncate, test_truncate_large_mantissa);
   tcase_add_test(tc_truncate, test_truncate_multiword);
-  
 
-  TCase *tc_floor = tcase_create("floor");
+  TCase* tc_floor = tcase_create("floor");
   tcase_add_test(tc_floor, test_floor_positive_fraction);
   tcase_add_test(tc_floor, test_floor_negative_fraction);
   tcase_add_test(tc_floor, test_floor_negative_integer);
   tcase_add_test(tc_floor, test_floor_positive_integer);
   tcase_add_test(tc_floor, test_floor_null);
   tcase_add_test(tc_floor, test_floor_negative_multiword_fraction);
-  
 
-  TCase *tc_negate = tcase_create("negate");
+  TCase* tc_negate = tcase_create("negate");
   tcase_add_test(tc_negate, test_negate_positive);
   tcase_add_test(tc_negate, test_negate_negative);
   tcase_add_test(tc_negate, test_negate_zero);
   tcase_add_test(tc_negate, test_negate_preserves_scale_and_mantissa);
   tcase_add_test(tc_negate, test_negate_null);
 
-
-  TCase *tc_round = tcase_create("round");
+  TCase* tc_round = tcase_create("round");
   tcase_add_test(tc_round, test_round_down);
   tcase_add_test(tc_round, test_round_up);
   tcase_add_test(tc_round, test_round_half_up);
