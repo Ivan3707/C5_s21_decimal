@@ -30,7 +30,7 @@ TARGET = s21_decimal.a
 SRC = s21_div.c s21_other.c
 OBJ = $(SRC:.c=.o)
 
-TEST_SRC = tests/test_runner.c tests/test_div.c
+TEST_SRC = tests/test_runner.c tests/test_div.c tests/test_other.c
 TEST_BIN = test.exe
 
 .PHONY: all clean test s21_decimal.a gcov_report rebuild
@@ -39,8 +39,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJ)
 > $(AR) $(ARFLAGS) $@ $^
-
-s21_decimal.a: $(TARGET)
+> rm -f $(OBJ)
 
 %.o: %.c s21_decimal.h
 > $(CC) $(CFLAGS) -c $< -o $@
@@ -52,10 +51,10 @@ test: $(TEST_BIN)
 > ./$(TEST_BIN)
 
 gcov_report:
+> rm -f $(TARGET) $(OBJ) $(TEST_BIN)
 > $(CC) $(CFLAGS) $(COVERAGE_FLAGS) -c s21_div.c -o s21_div.o
-> $(AR) $(ARFLAGS) $(TARGET) s21_div.o
 > $(CC) $(CFLAGS) $(COVERAGE_FLAGS) -c s21_other.c -o s21_other.o
-> $(AR) $(ARFLAGS) $(TARGET) s21_other.o
+> $(AR) $(ARFLAGS) $(TARGET) s21_div.o s21_other.o
 > $(CC) $(TEST_CFLAGS) $(COVERAGE_FLAGS) $(CHECK_INC) $(TEST_SRC) $(TARGET) $(CHECK_LIB) -o $(TEST_BIN)
 > ./$(TEST_BIN)
 > gcovr --root . --filter 's21_.*\.c' --html --html-self-contained --output coverage.html

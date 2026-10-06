@@ -54,15 +54,15 @@ static void divide_integer_part(s21_decimal value_1, s21_decimal value_2,
 
     uint64_t current;
 
-    current = ((uint64_t)remainder->bits[0] << 1) | bit;
+    current = ((uint64_t)(uint32_t)remainder->bits[0] << 1) | bit;
     remainder->bits[0] = (uint32_t)current;
     uint32_t carry = current >> 32;
 
-    current = ((uint64_t)remainder->bits[1] << 1) | carry;
+    current = ((uint64_t)(uint32_t)remainder->bits[1] << 1) | carry;
     remainder->bits[1] = (uint32_t)current;
     carry = current >> 32;
 
-    current = ((uint64_t)remainder->bits[2] << 1) | carry;
+    current = ((uint64_t)(uint32_t)remainder->bits[2] << 1) | carry;
     remainder->bits[2] = (uint32_t)current;
 
     int x = compare_mantissa(value_2, remainder);
@@ -70,13 +70,13 @@ static void divide_integer_part(s21_decimal value_1, s21_decimal value_2,
       subtract_mantissa(value_2, remainder);
     }
 
-    current = ((uint64_t)result->bits[0] << 1) | x;
+    current = ((uint64_t)(uint32_t)result->bits[0] << 1) | x;
     result->bits[0] = current & 0xFFFFFFFF;
 
-    current = ((uint64_t)result->bits[1] << 1) | (current >> 32);
+    current = ((uint64_t)(uint32_t)result->bits[1] << 1) | (current >> 32);
     result->bits[1] = current & 0xFFFFFFFF;
 
-    current = ((uint64_t)result->bits[2] << 1) | (current >> 32);
+    current = ((uint64_t)(uint32_t)result->bits[2] << 1) | (current >> 32);
     result->bits[2] = current & 0xFFFFFFFF;
 
     i--;
@@ -279,11 +279,17 @@ static void normalize_negative_scale(s21_decimal* result, int* scale,
 // главныя функция деления
 int s21_div(s21_decimal value_1, s21_decimal value_2, s21_decimal* result) {
   int res = 0;
+  if (result == NULL) {
+    return 1;
+  }
+  
   int overflow = 0;
   s21_decimal remainder = {0};
-  result->bits[0] = 0;
-  result->bits[1] = 0;
-  result->bits[2] = 0;
+  if (res == 0){
+    result->bits[0] = 0;
+    result->bits[1] = 0;
+    result->bits[2] = 0;
+  }
 
   if (value_2.bits[0] == 0 && value_2.bits[1] == 0 && value_2.bits[2] == 0) {
     res = 3;
