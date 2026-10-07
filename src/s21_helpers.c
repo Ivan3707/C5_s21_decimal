@@ -36,6 +36,21 @@ int add_one(s21_decimal* result) {
   return carry;
 }
 
+int s21_add_mantissa(s21_decimal value_1, s21_decimal value_2,
+                     s21_decimal* result) {
+  uint32_t carry = 0;
+
+  for (int i = 0; i < 3; i++) {
+    uint64_t sum = (uint64_t)(uint32_t)value_1.bits[i] +
+                   (uint32_t)(value_2.bits[i]) + carry;
+
+    carry = (uint32_t)(sum >> 32);
+
+    result->bits[i] = (int)(uint32_t)sum;
+  }
+  return carry;
+}
+
 int s21_get_sign(s21_decimal value) {
   unsigned int sign = (uint32_t)value.bits[3] >> 31;
   return sign;
@@ -51,6 +66,12 @@ void s21_set_sign(s21_decimal* value, int sign) {
 
 int s21_get_scale(s21_decimal value) {
   return ((uint32_t)(value.bits[3]) >> 16) & 255u;
+}
+
+void s21_set_scale(s21_decimal* value, int scale) {
+  value->bits[3] = (int)((uint32_t)value->bits[3] & ~(255u << 16));
+
+  value->bits[3] = (int)((uint32_t)value->bits[3] | ((uint32_t)scale << 16));
 }
 
 void s21_zero(s21_decimal* value) {

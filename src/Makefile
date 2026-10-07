@@ -8,18 +8,22 @@ TEST_CFLAGS = -std=c11 -Wall -Wextra -Wno-memset-transposed-args \
 
 COVERAGE_FLAGS = -fprofile-arcs -ftest-coverage
 
+PKG_CONFIG ?= pkg-config
+CHECK_CFLAGS = $(shell $(PKG_CONFIG) --cflags check 2>/dev/null)
+CHECK_LIBS = $(shell $(PKG_CONFIG) --libs check 2>/dev/null)
+
+ifeq ($(strip $(CHECK_LIBS)),)
 ifeq ($(OS),Windows_NT)
-CHECK_INC = -I"C:/msys64/ucrt64/include"
-CHECK_LIB = -L"C:/msys64/ucrt64/lib" -lcheck
+CHECK_CFLAGS = -I"C:/msys64/ucrt64/include"
+CHECK_LIBS = -L"C:/msys64/ucrt64/lib" -lcheck
 else
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-CHECK_INC =
-CHECK_LIB = -lcheck -lsubunit -lm -lpthread -lrt
+CHECK_LIBS = -lcheck -lsubunit -lm -lpthread -lrt
 endif
 ifeq ($(UNAME_S),Darwin)
-CHECK_INC =
-CHECK_LIB = -lcheck -lm -lpthread
+CHECK_LIBS = -lcheck -lm -lpthread
+endif
 endif
 endif
 
@@ -28,11 +32,9 @@ TARGET = s21_decimal.a
 SRC = s21_div.c s21_other.c s21_helpers.c
 OBJ = $(SRC:.c=.o)
 
-TEST_SRC = tests/test_runner.c tests/test_div.c tests/test_other.c
+TEST_SRC = tests/test_runner.c tests/test_div.c tests/test_other.c tests/test_helpers.c
 TEST_BIN = test.exe
 HELPERS_TEST_BIN = test_helpers.exe
-HELPERS_CHECK_CFLAGS = $(shell pkg-config --cflags check)
-HELPERS_CHECK_LIBS = $(shell pkg-config --libs check)
 
 .PHONY: all clean test test_helpers gcov_report rebuild
 
@@ -46,13 +48,13 @@ $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TEST_BIN): $(TEST_SRC) $(TARGET) s21_decimal.h
-	$(CC) $(TEST_CFLAGS) $(CHECK_INC) $(TEST_SRC) $(TARGET) $(CHECK_LIB) -o $(TEST_BIN)
+	$(CC) $(TEST_CFLAGS) $(CHECK_CFLAGS) $(TEST_SRC) $(TARGET) $(CHECK_LIBS) -o $(TEST_BIN)
 
 test: $(TEST_BIN)
 	./$(TEST_BIN)
 
 $(HELPERS_TEST_BIN): tests/test_helpers.c s21_helpers.c s21_decimal.h
-	$(CC) $(CFLAGS) $(HELPERS_CHECK_CFLAGS) -DS21_HELPERS_TEST_MAIN tests/test_helpers.c s21_helpers.c $(HELPERS_CHECK_LIBS) -o $@
+	$(CC) $(CFLAGS) $(CHECK_CFLAGS) -DS21_HELPERS_TEST_MAIN tests/test_helpers.c s21_helpers.c $(CHECK_LIBS) -o $@
 
 test_helpers: $(HELPERS_TEST_BIN)
 	./$(HELPERS_TEST_BIN)
@@ -64,7 +66,7 @@ gcov_report:
 	$(AR) $(ARFLAGS) $(TARGET) s21_other.o
 	$(CC) $(CFLAGS) $(COVERAGE_FLAGS) -c s21_helpers.c -o s21_helpers.o
 	$(AR) $(ARFLAGS) $(TARGET) s21_helpers.o
-	$(CC) $(TEST_CFLAGS) $(COVERAGE_FLAGS) $(CHECK_INC) $(TEST_SRC) $(TARGET) $(CHECK_LIB) -o $(TEST_BIN)
+	$(CC) $(TEST_CFLAGS) $(COVERAGE_FLAGS) $(CHECK_CFLAGS) $(TEST_SRC) $(TARGET) $(CHECK_LIBS) -o $(TEST_BIN)
 	./$(TEST_BIN)
 	gcovr --root . --filter 's21_.*\.c' --html --html-self-contained --output coverage.html
 	gcovr --root . --filter 's21_.*\.c' --print-summary
