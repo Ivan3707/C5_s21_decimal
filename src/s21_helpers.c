@@ -18,6 +18,25 @@ uint32_t divide_by_10(s21_decimal* result) {
   return remainder;
 }
 
+uint32_t s21_divide_by_10_with_high(s21_decimal* result, uint32_t high) {
+  uint64_t current;
+  uint32_t remainder;
+
+  current = ((uint64_t)high << 32) | (uint32_t)result->bits[2];
+  result->bits[2] = current / 10;
+  remainder = current % 10;
+
+  current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[1];
+  result->bits[1] = current / 10;
+  remainder = current % 10;
+
+  current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[0];
+  result->bits[0] = current / 10;
+  remainder = current % 10;
+
+  return remainder;
+}
+
 int add_one(s21_decimal* result) {
   uint64_t current;
 
@@ -49,6 +68,26 @@ int s21_add_mantissa(s21_decimal value_1, s21_decimal value_2,
     result->bits[i] = (int)(uint32_t)sum;
   }
   return carry;
+}
+
+int s21_sub_mantissa(s21_decimal value_1, s21_decimal value_2,
+                     s21_decimal *result )
+{
+  uint32_t borrow = 0;
+
+  for(int i = 0; i < 3; i++)
+  {
+    uint32_t a = (uint32_t)value_1.bits[i];
+    uint32_t b = (uint32_t)value_2.bits[i];
+
+    uint64_t needed = (uint64_t)b + borrow;
+
+    uint32_t difference = (uint32_t)((uint64_t)a - needed );
+
+    borrow = (uint64_t)a < needed;
+    result->bits[i] = (int)difference;
+  }
+  return borrow;
 }
 
 int s21_get_sign(s21_decimal value) {

@@ -102,24 +102,6 @@ static uint32_t multiply_mantissa_by_10(s21_decimal* remainder,
   return carry;
 }
 
-static uint32_t divide_by_10_with_high(s21_decimal* result, uint32_t high) {
-  uint64_t current;
-  uint32_t remainder;
-
-  current = ((uint64_t)high << 32) | (uint32_t)result->bits[2];
-  result->bits[2] = current / 10;
-  remainder = current % 10;
-
-  current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[1];
-  result->bits[1] = current / 10;
-  remainder = current % 10;
-
-  current = ((uint64_t)remainder << 32) | (uint32_t)result->bits[0];
-  result->bits[0] = current / 10;
-  remainder = current % 10;
-
-  return remainder;
-}
 
 static void round_overflow_result(s21_decimal* result, s21_decimal remainder,
                                   uint32_t remainder_10, int* res) {
@@ -171,7 +153,7 @@ static void calculate_fraction_part(s21_decimal value_2, s21_decimal* result,
     (*scale)++;
     if (carry != 0) {
       *overflow = 1;
-      uint32_t remainder_10 = divide_by_10_with_high(result, carry);
+      uint32_t remainder_10 = s21_divide_by_10_with_high(result, carry);
       round_overflow_result(result, *remainder, remainder_10, res);
       (*scale)--;
     }

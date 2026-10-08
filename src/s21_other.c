@@ -1,4 +1,5 @@
 #include "s21_decimal.h"
+#include <stdio.h>
 
 int s21_truncate(s21_decimal value, s21_decimal* result) {
   int res = 0;

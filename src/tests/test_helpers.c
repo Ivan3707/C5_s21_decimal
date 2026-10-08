@@ -114,6 +114,48 @@ START_TEST(test_add_mantissa_overflow) {
 }
 END_TEST
 
+START_TEST(test_sub_mantissa_simple) {
+  s21_decimal value_1 = {{100, 0, 0, 0}};
+  s21_decimal value_2 = {{50, 0, 0, 0}};
+  s21_decimal result = {{0, 0, 0, 0}};
+
+  int borrow = s21_sub_mantissa(value_1, value_2, &result);
+
+  ck_assert_int_eq(borrow, 0);
+  ck_assert_int_eq(result.bits[0], 50);
+  ck_assert_int_eq(result.bits[1], 0);
+  ck_assert_int_eq(result.bits[2], 0);
+}
+END_TEST
+
+START_TEST(test_sub_mantissa_borrow_to_next_word) {
+  s21_decimal value_1 = {{0, 1, 0, 0}};
+  s21_decimal value_2 = {{50, 0, 0, 0}};
+  s21_decimal result = {{0, 0, 0, 0}};
+
+  int borrow = s21_sub_mantissa(value_1, value_2, &result);
+
+  ck_assert_int_eq(borrow, 0);
+  ck_assert_uint_eq((uint32_t)result.bits[0], 0xFFFFFFCEu);
+  ck_assert_int_eq(result.bits[1], 0);
+  ck_assert_int_eq(result.bits[2], 0);
+}
+END_TEST
+
+START_TEST(test_sub_mantissa_underflow) {
+  s21_decimal value_1 = {{50, 0, 0, 0}};
+  s21_decimal value_2 = {{100, 0, 0, 0}};
+  s21_decimal result = {{0, 0, 0, 0}};
+
+  int borrow = s21_sub_mantissa(value_1, value_2, &result);
+
+  ck_assert_int_eq(borrow, 1);
+  ck_assert_uint_eq((uint32_t)result.bits[0], 0xFFFFFFCEu);
+  ck_assert_uint_eq((uint32_t)result.bits[1], 0xFFFFFFFFu);
+  ck_assert_uint_eq((uint32_t)result.bits[2], 0xFFFFFFFFu);
+}
+END_TEST
+
 Suite* s21_helpers_suite(void) {
   Suite* suite = suite_create("decimal helpers");
   TCase* cases = tcase_create("sign, scale and zero");
@@ -125,6 +167,9 @@ Suite* s21_helpers_suite(void) {
   tcase_add_test(cases, test_add_mantissa_simple);
   tcase_add_test(cases, test_add_mantissa_carry_to_next_word);
   tcase_add_test(cases, test_add_mantissa_overflow);
+  tcase_add_test(cases, test_sub_mantissa_simple);
+  tcase_add_test(cases, test_sub_mantissa_borrow_to_next_word);
+  tcase_add_test(cases, test_sub_mantissa_underflow);
 
   suite_add_tcase(suite, cases);
   return suite;
