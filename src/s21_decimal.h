@@ -1,7 +1,7 @@
 #ifndef S21_DECIMAL_H
 #define S21_DECIMAL_H
 
-#include <stddef.h>
+#include <stdio.h>
 #include <stdint.h>
 
 typedef struct {
