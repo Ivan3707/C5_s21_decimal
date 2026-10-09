@@ -1,6 +1,6 @@
 #include "s21_decimal.h"
 
-#define BIG_WORDS 6  
+#define BIG_WORDS 6  // 96 бит * 10^28 помещается в 192 бита
 
 static int is_zero(s21_decimal value) {
   return value.bits[0] == 0 && value.bits[1] == 0 && value.bits[2] == 0;
@@ -59,7 +59,7 @@ static int compare(s21_decimal a, s21_decimal b) {
   int sign_b = s21_get_sign(b);
 
   if (is_zero(a) && is_zero(b)) {
-    result = 0;  
+    result = 0;
   } else if (is_zero(a)) {
     result = sign_b ? 1 : -1;
   } else if (is_zero(b)) {

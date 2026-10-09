@@ -3,6 +3,7 @@
 #define PROD_WORDS 6
 #define MAX_SCALE 28
 
+// Полное умножение 96x96 -> 192 бита
 static void mul_mantissa(s21_decimal a, s21_decimal b, uint32_t* prod) {
   for (int i = 0; i < PROD_WORDS; i++) {
     prod[i] = 0;
@@ -23,6 +24,11 @@ static int prod_fits_96(const uint32_t* prod) {
   return prod[3] == 0 && prod[4] == 0 && prod[5] == 0;
 }
 
+static int prod_is_zero(const uint32_t* prod) {
+  return prod_fits_96(prod) && prod[0] == 0 && prod[1] == 0 && prod[2] == 0;
+}
+
+// Делит на 10 и возвращает остаток
 static uint32_t prod_divide_by_10(uint32_t* prod) {
   uint64_t remainder = 0;
   for (int i = PROD_WORDS - 1; i >= 0; i--) {
@@ -42,14 +48,16 @@ static void prod_increment(uint32_t* prod) {
   }
 }
 
+// Уменьшает масштаб (банковское округление), пока число не влезет в decimal
 static int prod_to_decimal(uint32_t* prod, int scale, int sign,
                            s21_decimal* result) {
   int code = 0;
   int finished = 0;
+  int was_zero = prod_is_zero(prod);
 
   while (!finished) {
     uint32_t last_digit = 0;
-    int sticky = 0;  
+    int sticky = 0;  // были ли ненулевые цифры раньше последней
 
     while (scale > 0 && (scale > MAX_SCALE || !prod_fits_96(prod))) {
       if (last_digit != 0) {
@@ -65,10 +73,12 @@ static int prod_to_decimal(uint32_t* prod, int scale, int sign,
     finished = prod_fits_96(prod) || scale == 0;
   }
 
+  s21_zero(result);
   if (!prod_fits_96(prod)) {
-    code = sign ? 2 : 1;
+    code = sign ? 2 : 1;  // переполнение
+  } else if (!was_zero && prod_is_zero(prod)) {
+    code = 2;  // слишком малое число (как в s21_div)
   } else {
-    s21_zero(result);
     for (int i = 0; i < 3; i++) {
       result->bits[i] = (int)prod[i];
     }

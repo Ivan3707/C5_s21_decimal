@@ -29,10 +29,10 @@ endif
 
 TARGET = s21_decimal.a
 
-SRC = s21_div.c s21_other.c s21_helpers.c
+SRC = s21_div.c s21_other.c s21_helpers.c s21_compare.c s21_mul.c
 OBJ = $(SRC:.c=.o)
 
-TEST_SRC = tests/test_runner.c tests/test_div.c tests/test_other.c tests/test_helpers.c
+TEST_SRC = tests/test_runner.c tests/test_div.c tests/test_other.c tests/test_helpers.c tests/test_compare.c tests/test_mul.c
 TEST_BIN = test.exe
 HELPERS_TEST_BIN = test_helpers.exe
 
@@ -60,12 +60,8 @@ test_helpers: $(HELPERS_TEST_BIN)
 	./$(HELPERS_TEST_BIN)
 
 gcov_report:
-	$(CC) $(CFLAGS) $(COVERAGE_FLAGS) -c s21_div.c -o s21_div.o
-	$(AR) $(ARFLAGS) $(TARGET) s21_div.o
-	$(CC) $(CFLAGS) $(COVERAGE_FLAGS) -c s21_other.c -o s21_other.o
-	$(AR) $(ARFLAGS) $(TARGET) s21_other.o
-	$(CC) $(CFLAGS) $(COVERAGE_FLAGS) -c s21_helpers.c -o s21_helpers.o
-	$(AR) $(ARFLAGS) $(TARGET) s21_helpers.o
+	$(CC) $(CFLAGS) $(COVERAGE_FLAGS) -c $(SRC)
+	$(AR) $(ARFLAGS) $(TARGET) $(OBJ)
 	$(CC) $(TEST_CFLAGS) $(COVERAGE_FLAGS) $(CHECK_CFLAGS) $(TEST_SRC) $(TARGET) $(CHECK_LIBS) -o $(TEST_BIN)
 	./$(TEST_BIN)
 	gcovr --root . --filter 's21_.*\.c' --html --html-self-contained --output coverage.html
