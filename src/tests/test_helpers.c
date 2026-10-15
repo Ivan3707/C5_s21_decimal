@@ -156,6 +156,32 @@ START_TEST(test_sub_mantissa_underflow) {
 }
 END_TEST
 
+START_TEST(test_compare_mantissa) {
+  const struct {
+    s21_decimal a;
+    s21_decimal b;
+    int expected;
+  } cases[] = {
+      {{{0, 0, 0, 0}}, {{0, 0, 0, 0}}, 0},
+      {{{-1, -1, -1, 0}}, {{-1, -1, -1, (int)0x801C0000u}}, 0},
+      {{{1, 0, 0, 0}}, {{0, 0, 0, 0}}, 1},
+      {{{-1, 0, 0, 0}}, {{0x7FFFFFFF, 0, 0, 0}}, 1},
+      {{{-1, 0, 0, 0}}, {{0, 1, 0, 0}}, -1},
+      {{{-1, -1, 0, 0}}, {{0, 0, 1, 0}}, -1},
+      {{{0, -1, 0, 0}}, {{-1, 0x7FFFFFFF, 0, 0}}, 1},
+      {{{0, 0, -1, 0}}, {{-1, -1, 0x7FFFFFFF, 0}}, 1},
+  };
+  int index = _i / 2;
+  if (_i % 2 == 0) {
+    ck_assert_int_eq(s21_compare_mantissa(cases[index].a, cases[index].b),
+                     cases[index].expected);
+  } else {
+    ck_assert_int_eq(s21_compare_mantissa(cases[index].b, cases[index].a),
+                     -cases[index].expected);
+  }
+}
+END_TEST
+
 Suite* s21_helpers_suite(void) {
   Suite* suite = suite_create("decimal helpers");
   TCase* cases = tcase_create("sign, scale and zero");
@@ -170,6 +196,7 @@ Suite* s21_helpers_suite(void) {
   tcase_add_test(cases, test_sub_mantissa_simple);
   tcase_add_test(cases, test_sub_mantissa_borrow_to_next_word);
   tcase_add_test(cases, test_sub_mantissa_underflow);
+  tcase_add_loop_test(cases, test_compare_mantissa, 0, 16);
 
   suite_add_tcase(suite, cases);
   return suite;

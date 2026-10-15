@@ -29,14 +29,15 @@ endif
 
 TARGET = s21_decimal.a
 
-SRC = s21_div.c s21_other.c s21_helpers.c s21_compare.c s21_mul.c
+SRC = s21_add.c s21_div.c s21_other.c s21_helpers.c s21_compare.c s21_mul.c
 OBJ = $(SRC:.c=.o)
 
-TEST_SRC = tests/test_runner.c tests/test_div.c tests/test_other.c tests/test_helpers.c tests/test_compare.c tests/test_mul.c
+TEST_SRC = tests/test_add.c tests/test_runner.c tests/test_div.c tests/test_other.c tests/test_helpers.c tests/test_compare.c tests/test_mul.c
 TEST_BIN = test.exe
 HELPERS_TEST_BIN = test_helpers.exe
+ADD_TEST_BIN = test_add.exe
 
-.PHONY: all clean test test_helpers gcov_report rebuild
+.PHONY: all clean test test_helpers test_add gcov_report rebuild
 
 all: $(TARGET)
 
@@ -59,6 +60,12 @@ $(HELPERS_TEST_BIN): tests/test_helpers.c s21_helpers.c s21_decimal.h
 test_helpers: $(HELPERS_TEST_BIN)
 	./$(HELPERS_TEST_BIN)
 
+$(ADD_TEST_BIN): tests/test_add.c s21_add.c s21_helpers.c s21_decimal.h
+	$(CC) $(CFLAGS) $(CHECK_CFLAGS) -DS21_ADD_TEST_MAIN tests/test_add.c s21_add.c s21_helpers.c $(CHECK_LIBS) -o $@
+
+test_add: $(ADD_TEST_BIN)
+	./$(ADD_TEST_BIN)
+
 gcov_report:
 	$(CC) $(CFLAGS) $(COVERAGE_FLAGS) -c $(SRC)
 	$(AR) $(ARFLAGS) $(TARGET) $(OBJ)
@@ -70,6 +77,7 @@ gcov_report:
 	rm -f *.gcda *.gcno *.gcov
 
 clean:
+	rm -f $(ADD_TEST_BIN)
 	rm -f $(HELPERS_TEST_BIN)
 	rm -f $(TARGET) $(OBJ) $(TEST_BIN)
 	rm -f *.gcda *.gcno *.gcov
