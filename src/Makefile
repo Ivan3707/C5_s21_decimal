@@ -29,10 +29,10 @@ endif
 
 TARGET = s21_decimal.a
 
-SRC = s21_div.c s21_other.c s21_helpers.c s21_compare.c s21_mul.c
+SRC = s21_div.c s21_other.c s21_helpers.c s21_compare.c s21_mul.c s21_convert.c
 OBJ = $(SRC:.c=.o)
 
-TEST_SRC = tests/test_runner.c tests/test_div.c tests/test_other.c tests/test_helpers.c tests/test_compare.c tests/test_mul.c
+TEST_SRC = tests/test_runner.c tests/test_div.c tests/test_other.c tests/test_helpers.c tests/test_compare.c tests/test_mul.c tests/test_convert.c
 TEST_BIN = test.exe
 HELPERS_TEST_BIN = test_helpers.exe
 
