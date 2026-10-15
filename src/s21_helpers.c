@@ -55,6 +55,20 @@ int add_one(s21_decimal* result) {
   return carry;
 }
 
+int s21_compare_mantissa(s21_decimal value_1, s21_decimal value_2) {
+  int res = 0;
+
+  for (int i = 2; i >= 0 && res == 0; i--) {
+    if ((uint32_t)value_1.bits[i] > (uint32_t)value_2.bits[i]) {
+      res = 1;
+    } else if ((uint32_t)value_1.bits[i] < (uint32_t)value_2.bits[i]) {
+      res = -1;
+    }
+  }
+
+  return res;
+}
+
 int s21_add_mantissa(s21_decimal value_1, s21_decimal value_2,
                      s21_decimal* result) {
   uint32_t carry = 0;
@@ -71,18 +85,16 @@ int s21_add_mantissa(s21_decimal value_1, s21_decimal value_2,
 }
 
 int s21_sub_mantissa(s21_decimal value_1, s21_decimal value_2,
-                     s21_decimal *result )
-{
+                     s21_decimal* result) {
   uint32_t borrow = 0;
 
-  for(int i = 0; i < 3; i++)
-  {
+  for (int i = 0; i < 3; i++) {
     uint32_t a = (uint32_t)value_1.bits[i];
     uint32_t b = (uint32_t)value_2.bits[i];
 
     uint64_t needed = (uint64_t)b + borrow;
 
-    uint32_t difference = (uint32_t)((uint64_t)a - needed );
+    uint32_t difference = (uint32_t)((uint64_t)a - needed);
 
     borrow = (uint64_t)a < needed;
     result->bits[i] = (int)difference;
