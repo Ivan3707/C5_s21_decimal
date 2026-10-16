@@ -102,7 +102,6 @@ static uint32_t multiply_mantissa_by_10(s21_decimal* remainder,
   return carry;
 }
 
-
 static void round_overflow_result(s21_decimal* result, s21_decimal remainder,
                                   uint32_t remainder_10, int* res) {
   if (remainder_10 > 5 || (remainder_10 == 5 &&
@@ -278,7 +277,8 @@ int s21_div(s21_decimal value_1, s21_decimal value_2, s21_decimal* result) {
       int scale_2 = s21_get_scale(value_2);
       scale = (int)scale_1 - (int)scale_2;
     }
-    calculate_fraction_part(value_2, result, &remainder, &scale, &overflow,&res);
+    calculate_fraction_part(value_2, result, &remainder, &scale, &overflow,
+                            &res);
     normalize_negative_scale(result, &scale, &res);
     round_division_result(result, remainder, value_2, &scale, overflow, &res);
 

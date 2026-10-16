@@ -28,7 +28,6 @@ static int decimal_equal(s21_decimal a, s21_decimal b) {
          (uint32_t)a.bits[3] == (uint32_t)b.bits[3];
 }
 
-
 START_TEST(test_mul_simple) {
   s21_decimal result = {{0}};
   s21_decimal expected = make_decimal(6, 0, 0, 0, 0);
@@ -59,7 +58,6 @@ START_TEST(test_mul_by_one) {
   ck_assert_int_eq(decimal_equal(result, value), 1);
 }
 END_TEST
-
 
 START_TEST(test_mul_negative_by_positive) {
   s21_decimal result = {{0}};
@@ -93,7 +91,6 @@ START_TEST(test_mul_negative_by_negative) {
   ck_assert_int_eq(decimal_equal(result, expected), 1);
 }
 END_TEST
-
 
 START_TEST(test_mul_scales_add) {
   s21_decimal result = {{0}};
@@ -139,7 +136,6 @@ START_TEST(test_mul_zero_keeps_scale_sum) {
 }
 END_TEST
 
-
 START_TEST(test_mul_multiword_product) {
   s21_decimal result = {{0}};
   s21_decimal expected = make_decimal(1, 0xFFFFFFFEU, 0, 0, 0);
@@ -179,8 +175,6 @@ START_TEST(test_mul_max_by_one_with_trailing_zero) {
   ck_assert_int_eq(decimal_equal(result, max), 1);
 }
 END_TEST
-
-
 
 START_TEST(test_mul_rounding_max_by_half) {
   s21_decimal result = {{0}};
@@ -281,8 +275,6 @@ START_TEST(test_mul_rounding_reduces_large_scale) {
 }
 END_TEST
 
-
-
 START_TEST(test_mul_overflow_positive) {
   s21_decimal result = {{123, 456, 789, 111}};
   s21_decimal expected = make_decimal(0, 0, 0, 0, 0);
@@ -342,15 +334,12 @@ START_TEST(test_mul_underflow_half_to_even_zero) {
 }
 END_TEST
 
-
-
 START_TEST(test_mul_null_result) {
-  ck_assert_int_eq(s21_mul(make_decimal(1, 0, 0, 0, 0),
-                           make_decimal(1, 0, 0, 0, 0), NULL),
-                   1);
+  ck_assert_int_eq(
+      s21_mul(make_decimal(1, 0, 0, 0, 0), make_decimal(1, 0, 0, 0, 0), NULL),
+      1);
 }
 END_TEST
-
 
 Suite* s21_mul_suite(void) {
   Suite* suite = suite_create("s21_mul");
