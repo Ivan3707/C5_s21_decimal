@@ -1,10 +1,8 @@
 #include "s21_decimal_internal.h"
 
-#define PROD_WORDS S21_BIG_WORDS
-
-// Полное умножение 96x96 -> 192 бита
-static void mul_mantissa(s21_decimal a, s21_decimal b, uint32_t* prod) {
-  for (int i = 0; i < PROD_WORDS; i++) {
+static void mul_mantissa(s21_decimal a, s21_decimal b, s21_big_decimal* big) {
+  uint32_t* prod = big->bits;
+  for (int i = 0; i < S21_BIG_WORDS; i++) {
     prod[i] = 0;
   }
   for (int i = 0; i < 3; i++) {
@@ -24,12 +22,12 @@ int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal* result) {
   if (result == NULL) {
     code = 1;
   } else {
-    s21_big_decimal product;
+    s21_big_decimal prod;
     int scale = s21_get_scale(value_1) + s21_get_scale(value_2);
     int sign = s21_get_sign(value_1) ^ s21_get_sign(value_2);
 
-    mul_mantissa(value_1, value_2, product.bits);
-    code = s21_big_to_decimal(product, scale, sign, result);
+    mul_mantissa(value_1, value_2, &prod);
+    code = s21_big_to_decimal(prod, scale, sign, result);
   }
   return code;
 }

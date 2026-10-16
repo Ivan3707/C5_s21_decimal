@@ -1,10 +1,6 @@
 #include "s21_decimal.h"
 
-#define BIG_WORDS 6  // 96 бит * 10^28 помещается в 192 бита
-
-static int is_zero(s21_decimal value) {
-  return value.bits[0] == 0 && value.bits[1] == 0 && value.bits[2] == 0;
-}
+#define BIG_WORDS 6  
 
 static void to_big(s21_decimal value, uint32_t* big) {
   for (int i = 0; i < BIG_WORDS; i++) {
@@ -22,6 +18,10 @@ static void big_mul10(uint32_t* big) {
     big[i] = (uint32_t)current;
     carry = current >> 32;
   }
+}
+
+static int is_zero(s21_decimal value) {
+  return value.bits[0] == 0 && value.bits[1] == 0 && value.bits[2] == 0;
 }
 
 static int big_cmp(const uint32_t* a, const uint32_t* b) {
