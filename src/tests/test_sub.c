@@ -127,6 +127,14 @@ START_TEST(test_sub_result_aliases_input) {
 }
 END_TEST
 
+START_TEST(test_sub_null_result) {
+  s21_decimal value_1 = make_decimal(1, 0, 0, 0, 0);
+  s21_decimal value_2 = make_decimal(2, 0, 0, 0, 0);
+
+  ck_assert_int_eq(s21_sub(value_1, value_2, NULL), 1);
+}
+END_TEST
+
 Suite* s21_sub_suite(void) {
   Suite* suite = suite_create("s21_sub");
   TCase* cases = tcase_create("subtraction cases");
@@ -137,6 +145,7 @@ Suite* s21_sub_suite(void) {
   tcase_add_loop_test(cases, test_sub_overflow, 0, 2);
   tcase_add_loop_test(cases, test_sub_bankers_rounding, 0, 3);
   tcase_add_loop_test(cases, test_sub_result_aliases_input, 0, 2);
+  tcase_add_test(cases, test_sub_null_result);
   suite_add_tcase(suite, cases);
   return suite;
 }

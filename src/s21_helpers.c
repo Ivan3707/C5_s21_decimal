@@ -84,7 +84,7 @@ int s21_big_to_decimal(s21_big_decimal value, int scale, int sign,
   return status;
 }
 
-uint32_t divide_by_10(s21_decimal* result) {
+uint32_t s21_divide_by_10(s21_decimal* result) {
   uint64_t current = (uint64_t)(uint32_t)result->bits[2];
   result->bits[2] = current / 10;
   uint32_t remainder = current % 10;
@@ -119,7 +119,7 @@ uint32_t s21_divide_by_10_with_high(s21_decimal* result, uint32_t high) {
   return remainder;
 }
 
-int add_one(s21_decimal* result) {
+int s21_add_one(s21_decimal* result) {
   uint64_t current;
 
   current = (uint64_t)(uint32_t)result->bits[0] + 1ULL;
