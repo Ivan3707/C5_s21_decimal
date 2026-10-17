@@ -1,6 +1,6 @@
 #include "s21_decimal.h"
 
-#define BIG_WORDS 6  
+#define BIG_WORDS 6
 
 static void to_big(s21_decimal value, uint32_t* big) {
   for (int i = 0; i < BIG_WORDS; i++) {
