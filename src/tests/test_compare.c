@@ -31,7 +31,6 @@ static void check_compare(s21_decimal a, s21_decimal b, int expected) {
   ck_assert_int_eq(s21_is_not_equal(a, b), expected != 0);
 }
 
-
 START_TEST(test_compare_zero_signs_equal) {
   check_compare(make_decimal(0, 0, 0, 0, 0), make_decimal(0, 0, 0, 0, 1), 0);
 }
@@ -54,7 +53,6 @@ START_TEST(test_compare_zero_vs_negative) {
 }
 END_TEST
 
-
 START_TEST(test_compare_different_signs) {
   check_compare(make_decimal(1, 0, 0, 0, 1), make_decimal(1, 0, 0, 0, 0), -1);
   check_compare(make_decimal(1, 0, 0, 0, 0), make_decimal(1, 0, 0, 0, 1), 1);
@@ -75,19 +73,14 @@ START_TEST(test_compare_negative_order) {
 }
 END_TEST
 
-
-
 START_TEST(test_compare_scale_equal_values) {
-  check_compare(make_decimal(10, 0, 0, 1, 0), make_decimal(100, 0, 0, 2, 0),
-                0);
-  check_compare(make_decimal(10, 0, 0, 1, 1), make_decimal(100, 0, 0, 2, 1),
-                0);
+  check_compare(make_decimal(10, 0, 0, 1, 0), make_decimal(100, 0, 0, 2, 0), 0);
+  check_compare(make_decimal(10, 0, 0, 1, 1), make_decimal(100, 0, 0, 2, 1), 0);
 }
 END_TEST
 
 START_TEST(test_compare_scale_different_values) {
-  check_compare(make_decimal(15, 0, 0, 1, 0), make_decimal(149, 0, 0, 2, 0),
-                1);
+  check_compare(make_decimal(15, 0, 0, 1, 0), make_decimal(149, 0, 0, 2, 0), 1);
   check_compare(make_decimal(149, 0, 0, 2, 0), make_decimal(15, 0, 0, 1, 0),
                 -1);
   check_compare(make_decimal(15, 0, 0, 1, 1), make_decimal(149, 0, 0, 2, 1),
@@ -103,7 +96,6 @@ START_TEST(test_compare_scale_28) {
                 make_decimal(MAX_U32, MAX_U32, MAX_U32, 0, 1), 1);
 }
 END_TEST
-
 
 START_TEST(test_compare_multiword_low_to_mid) {
   check_compare(make_decimal(0, 1, 0, 0, 0), make_decimal(MAX_U32, 0, 0, 0, 0),

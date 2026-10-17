@@ -188,6 +188,26 @@ START_TEST(test_add_different_scales_reduces_big_exactly) {
 }
 END_TEST
 
+START_TEST(test_add_different_scales_bankers_rounding) {
+  const uint32_t fractions[] = {4u, 5u, 6u};
+  const uint32_t expected_low[] = {UINT32_MAX, UINT32_MAX - 1u,
+                                   UINT32_MAX - 1u};
+  int index = _i / 2;
+  int sign = _i % 2;
+  s21_decimal a = {{-1, -1, -1, (int)((uint32_t)sign << 31)}};
+  s21_decimal b = {{(int)fractions[index], 0, 0,
+                    (int)(((uint32_t)(!sign) << 31) | (1u << 16))}};
+  s21_decimal result = {{0}};
+
+  ck_assert_int_eq(s21_add(a, b, &result), 0);
+  ck_assert_uint_eq((uint32_t)result.bits[0], expected_low[index]);
+  ck_assert_uint_eq((uint32_t)result.bits[1], UINT32_MAX);
+  ck_assert_uint_eq((uint32_t)result.bits[2], UINT32_MAX);
+  ck_assert_int_eq(s21_get_scale(result), 0);
+  ck_assert_int_eq(s21_get_sign(result), sign);
+}
+END_TEST
+
 Suite* s21_add_suite(void) {
   Suite* suite = suite_create("s21_add");
   TCase* cases = tcase_create("implemented cases");
@@ -201,6 +221,7 @@ Suite* s21_add_suite(void) {
   tcase_add_loop_test(cases, test_add_different_scales, 0, 4);
   tcase_add_loop_test(cases, test_add_different_scales_reduces_big_exactly, 0,
                       2);
+  tcase_add_loop_test(cases, test_add_different_scales_bankers_rounding, 0, 6);
   suite_add_tcase(suite, cases);
   return suite;
 }

@@ -90,6 +90,24 @@ START_TEST(test_int_to_decimal_int_min) {
 }
 END_TEST
 
+START_TEST(test_int_to_decimal_2147483646) {
+    s21_decimal d = {{0, 0, 0, 0}};
+    int res = s21_from_int_to_decimal(2147483646, &d);
+    ck_assert_int_eq(res, 0);
+    ck_assert_uint_eq((uint32_t)d.bits[0], 2147483646u);
+    ck_assert_int_eq(s21_get_sign(d), 0);
+}
+END_TEST
+
+START_TEST(test_int_to_decimal_minus_2147483647) {
+    s21_decimal d = {{0, 0, 0, 0}};
+    int res = s21_from_int_to_decimal(-2147483647, &d);
+    ck_assert_int_eq(res, 0);
+    ck_assert_uint_eq((uint32_t)d.bits[0], 2147483647u);
+    ck_assert_int_eq(s21_get_sign(d), 1);
+}
+END_TEST
+
 START_TEST(test_int_to_decimal_resets_bits) {
     s21_decimal d = {{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}};
     int res = s21_from_int_to_decimal(123, &d);
@@ -313,6 +331,15 @@ START_TEST(test_decimal_to_float_fraction) {
 }
 END_TEST
 
+START_TEST(test_decimal_to_float_negative_fraction) {
+    s21_decimal d = {{5, 0, 0, (int)((1u << 31) | (1u << 16))}};
+    float out = 0.0f;
+    int res = s21_from_decimal_to_float(d, &out);
+    ck_assert_int_eq(res, 0);
+    ck_assert_float_eq_tol(out, -0.5f, 1e-6f);
+}
+END_TEST
+
 START_TEST(test_decimal_to_float_0_001) {
     s21_decimal d = {{1, 0, 0, (int)(3u << 16)}};
     float out = 0.0f;
@@ -399,8 +426,9 @@ START_TEST(test_float_to_decimal_positive) {
     s21_decimal d = {{0, 0, 0, 0}};
     int res = s21_from_float_to_decimal(3.14f, &d);
     ck_assert_int_eq(res, 0);
+    ck_assert_int_eq((uint32_t)d.bits[0], 3140000u);
+    ck_assert_int_eq(s21_get_scale(d), 6);
     ck_assert_int_eq(s21_get_sign(d), 0);
-    ck_assert(fabs(s21_dec_to_double(d) - 3.14) < 1e-5);
 }
 END_TEST
 
@@ -408,8 +436,18 @@ START_TEST(test_float_to_decimal_negative) {
     s21_decimal d = {{0, 0, 0, 0}};
     int res = s21_from_float_to_decimal(-3.14f, &d);
     ck_assert_int_eq(res, 0);
+    ck_assert_int_eq((uint32_t)d.bits[0], 3140000u);
+    ck_assert_int_eq(s21_get_scale(d), 6);
     ck_assert_int_eq(s21_get_sign(d), 1);
-    ck_assert(fabs(s21_dec_to_double(d) + 3.14) < 1e-5);
+}
+END_TEST
+
+START_TEST(test_float_to_decimal_integer) {
+    s21_decimal d = {{0, 0, 0, 0}};
+    int res = s21_from_float_to_decimal(42.0f, &d);
+    ck_assert_int_eq(res, 0);
+    ck_assert_int_eq(s21_get_sign(d), 0);
+    ck_assert(s21_get_scale(d) >= 0);
 }
 END_TEST
 
@@ -442,6 +480,13 @@ START_TEST(test_float_to_decimal_thousand) {
     int res = s21_from_float_to_decimal(1000.0f, &d);
     ck_assert_int_eq(res, 0);
     ck_assert(fabs(s21_dec_to_double(d) - 1000.0) < 1e-2);
+}
+END_TEST
+
+START_TEST(test_float_to_decimal_half) {
+    s21_decimal d = {{0, 0, 0, 0}};
+    int res = s21_from_float_to_decimal(0.5f, &d);
+    ck_assert_int_eq(res, 0);
 }
 END_TEST
 
@@ -648,6 +693,8 @@ Suite *s21_convert_suite(void) {
     tcase_add_test(tc, test_int_to_decimal_negative);
     tcase_add_test(tc, test_int_to_decimal_int_max);
     tcase_add_test(tc, test_int_to_decimal_int_min);
+    tcase_add_test(tc, test_int_to_decimal_2147483646);
+    tcase_add_test(tc, test_int_to_decimal_minus_2147483647);
     tcase_add_test(tc, test_int_to_decimal_resets_bits);
     tcase_add_test(tc, test_int_to_decimal_null);
     suite_add_tcase(s, tc);
@@ -679,6 +726,7 @@ Suite *s21_convert_suite(void) {
     tcase_add_test(tc, test_decimal_to_float_one);
     tcase_add_test(tc, test_decimal_to_float_minus_one);
     tcase_add_test(tc, test_decimal_to_float_fraction);
+    tcase_add_test(tc, test_decimal_to_float_negative_fraction);
     tcase_add_test(tc, test_decimal_to_float_0_001);
     tcase_add_test(tc, test_decimal_to_float_integer);
     tcase_add_test(tc, test_decimal_to_float_123_456);
@@ -693,10 +741,12 @@ Suite *s21_convert_suite(void) {
     tcase_add_test(tc, test_float_to_decimal_minus_one);
     tcase_add_test(tc, test_float_to_decimal_positive);
     tcase_add_test(tc, test_float_to_decimal_negative);
+    tcase_add_test(tc, test_float_to_decimal_integer);
     tcase_add_test(tc, test_float_to_decimal_zero_point_five);
     tcase_add_test(tc, test_float_to_decimal_zero_point_one);
     tcase_add_test(tc, test_float_to_decimal_hundred);
     tcase_add_test(tc, test_float_to_decimal_thousand);
+    tcase_add_test(tc, test_float_to_decimal_half);
     tcase_add_test(tc, test_float_to_decimal_1_point_5);
     tcase_add_test(tc, test_float_to_decimal_2_point_5);
     tcase_add_test(tc, test_float_to_decimal_pi);
