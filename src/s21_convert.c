@@ -62,8 +62,6 @@ int s21_from_decimal_to_float(s21_decimal src, float *dst) {
     return flag;
 }
 
-/* ===================== 192-битные примитивы ===================== */
-
 typedef struct {
     uint32_t w[6];
 } s21_big192;
@@ -102,8 +100,6 @@ static void s21_big192_to_dec(s21_big192 *b, s21_decimal *d) {
     for (int i = 0; i < 3; i++) d->bits[i] = (int)b->w[i];
 }
 
-/* ===================== 96-битные примитивы с overflow ============== */
-
 static int s21_conv_is_zero(const s21_decimal *d) {
     return d->bits[0] == 0 && d->bits[1] == 0 && d->bits[2] == 0;
 }
@@ -135,8 +131,6 @@ static int s21_conv_add_digit(s21_decimal *d, int digit) {
     return carry != 0;
 }
 
-/* ===================== scale down с банковским округлением ======== */
-
 static int s21_conv_scale_down(s21_decimal *d, int *scale) {
     int ovf = 0;
     s21_big192 b;
@@ -165,8 +159,6 @@ static int s21_conv_scale_down(s21_decimal *d, int *scale) {
     return ovf;
 }
 
-/* ===================== float: валидация и парсинг ================== */
-
 static int s21_float_check(float abs_src) {
     int flag = 0;
     if (isnan(abs_src) || isinf(abs_src)) {
@@ -179,7 +171,6 @@ static int s21_float_check(float abs_src) {
     return flag;
 }
 
-/* парсит "d.dddddde[+-]XX": цифры в digits, экспонента в exp10 */
 static int s21_parse_float_string(const char *buf, char *digits,
                                   int *ndigits, int *exp10) {
     int flag = 0;
@@ -207,7 +198,6 @@ static int s21_parse_float_string(const char *buf, char *digits,
     return flag;
 }
 
-/* строит 96-бит мантиссу из digits; возвращает 1 при переполнении */
 static int s21_build_from_digits(s21_decimal *d, const char *digits,
                                  int ndigits) {
     int ovf = 0;
@@ -218,8 +208,6 @@ static int s21_build_from_digits(s21_decimal *d, const char *digits,
     }
     return ovf;
 }
-
-/* ===================== сборка float -> decimal ==================== */
 
 static int s21_float_assemble(float abs_src, s21_decimal *dst) {
     char buf[64];
