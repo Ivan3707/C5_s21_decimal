@@ -208,6 +208,27 @@ START_TEST(test_add_different_scales_bankers_rounding) {
 }
 END_TEST
 
+START_TEST(test_add_opposites_with_different_scales_are_zero) {
+  s21_decimal a = {{1, 0, 0, 0}};
+  s21_decimal b = {{10, 0, 0, (int)((1u << 31) | (1u << 16))}};
+  s21_decimal result = {{7, 8, 9, -1}};
+
+  ck_assert_int_eq(s21_add(a, b, &result), 0);
+  ck_assert_int_eq(result.bits[0], 0);
+  ck_assert_int_eq(result.bits[1], 0);
+  ck_assert_int_eq(result.bits[2], 0);
+  ck_assert_int_eq(result.bits[3], 0);
+}
+END_TEST
+
+START_TEST(test_add_null_result) {
+  s21_decimal a = {{1, 0, 0, 0}};
+  s21_decimal b = {{2, 0, 0, 0}};
+
+  ck_assert_int_eq(s21_add(a, b, NULL), 1);
+}
+END_TEST
+
 Suite* s21_add_suite(void) {
   Suite* suite = suite_create("s21_add");
   TCase* cases = tcase_create("implemented cases");
@@ -222,6 +243,8 @@ Suite* s21_add_suite(void) {
   tcase_add_loop_test(cases, test_add_different_scales_reduces_big_exactly, 0,
                       2);
   tcase_add_loop_test(cases, test_add_different_scales_bankers_rounding, 0, 6);
+  tcase_add_test(cases, test_add_opposites_with_different_scales_are_zero);
+  tcase_add_test(cases, test_add_null_result);
   suite_add_tcase(suite, cases);
   return suite;
 }

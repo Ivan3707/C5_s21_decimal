@@ -25,8 +25,8 @@ int s21_is_equal(s21_decimal value_1, s21_decimal value_2);
 int s21_is_not_equal(s21_decimal value_1, s21_decimal value_2);
 int s21_compare_mantissa(s21_decimal value_1, s21_decimal value_2);
 
-int add_one(s21_decimal* result);
-uint32_t divide_by_10(s21_decimal* result);
+int s21_add_one(s21_decimal* result);
+uint32_t s21_divide_by_10(s21_decimal* result);
 uint32_t s21_divide_by_10_with_high(s21_decimal* result, uint32_t high);
 
 int s21_get_sign(s21_decimal value);

@@ -33,15 +33,20 @@ static int s21_calculate_big_result(s21_big_decimal big_1,
 
 int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal* result) {
   int status = 0;
-  int same_sign = s21_get_sign(value_1) == s21_get_sign(value_2);
-  int same_scale = s21_get_scale(value_1) == s21_get_scale(value_2);
 
-  if (same_sign && same_scale) {
-    status = s21_add_same_sign_equal_scale(value_1, value_2, result);
-  } else if (same_scale) {
-    s21_add_different_signs_equal_scale(value_1, value_2, result);
+  if (result == NULL) {
+    status = 1;
   } else {
-    status = s21_add_different_scales(value_1, value_2, result);
+    int same_sign = s21_get_sign(value_1) == s21_get_sign(value_2);
+    int same_scale = s21_get_scale(value_1) == s21_get_scale(value_2);
+
+    if (same_sign && same_scale) {
+      status = s21_add_same_sign_equal_scale(value_1, value_2, result);
+    } else if (same_scale) {
+      s21_add_different_signs_equal_scale(value_1, value_2, result);
+    } else {
+      status = s21_add_different_scales(value_1, value_2, result);
+    }
   }
 
   return status;
@@ -146,7 +151,7 @@ static int s21_add_same_sign_equal_scale(s21_decimal value_1,
       uint32_t remainder = s21_divide_by_10_with_high(result, overflow);
       scale--;
       if (remainder > 5 || (remainder == 5 && ((uint32_t)result->bits[0] & 1u)))
-        add_one(result);
+        s21_add_one(result);
     }
   }
   if (status == 0) {

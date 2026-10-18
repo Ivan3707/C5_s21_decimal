@@ -109,7 +109,7 @@ static void round_overflow_result(s21_decimal* result, s21_decimal remainder,
                             (remainder.bits[0] != 0 || remainder.bits[1] != 0 ||
                              remainder.bits[2] != 0)))) {
     s21_decimal temp = *result;
-    if (add_one(&temp) == 0) {
+    if (s21_add_one(&temp) == 0) {
       *result = temp;
     } else {
       *res = 1;
@@ -200,10 +200,10 @@ static int compare_twice_remainder(s21_decimal remainder, s21_decimal divisor) {
 }
 
 static uint32_t divide_by_10_with_bankers_rounding(s21_decimal* result) {
-  uint32_t remainder = divide_by_10(result);
+  uint32_t remainder = s21_divide_by_10(result);
 
   if ((remainder > 5) || (remainder == 5 && ((uint32_t)result->bits[0] & 1))) {
-    add_one(result);
+    s21_add_one(result);
   }
   return remainder;
 }
@@ -220,7 +220,7 @@ static void round_division_result(s21_decimal* result, s21_decimal remainder,
     if (comparison > 0 ||
         (comparison == 0 && ((uint32_t)result->bits[0] & 1))) {
       s21_decimal temp = *result;
-      if (add_one(&temp) == 0) {
+      if (s21_add_one(&temp) == 0) {
         *result = temp;
       } else {
         divide_by_10_with_bankers_rounding(result);
