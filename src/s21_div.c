@@ -2,7 +2,7 @@
 
 #include "s21_decimal.h"
 
-static int s21_compare_mantissa(s21_decimal value_2, s21_decimal* remainder) {
+static int s21_can_subtract_divisor(s21_decimal value_2, s21_decimal* remainder) {
   int quotient = 0;
   if ((uint32_t)remainder->bits[2] > (uint32_t)value_2.bits[2]) {
     quotient = 1;
@@ -67,7 +67,7 @@ static void s21_divide_integer_part(s21_decimal value_1, s21_decimal value_2,
     current = ((uint64_t)(uint32_t)remainder->bits[2] << 1) | carry;
     remainder->bits[2] = (uint32_t)current;
 
-    int x = s21_compare_mantissa(value_2, remainder);
+    int x = s21_can_subtract_divisor(value_2, remainder);
     if (x) {
       s21_subtract_mantissa(value_2, remainder);
     }
@@ -137,7 +137,7 @@ static void s21_calculate_fraction_part(s21_decimal value_2, s21_decimal* result
       greater = 0;
       if (remainder_high != 0) {
         greater = 1;
-      } else if (s21_compare_mantissa(value_2, remainder)) {
+      } else if (s21_can_subtract_divisor(value_2, remainder)) {
         greater = 1;
       }
       if (greater) {
