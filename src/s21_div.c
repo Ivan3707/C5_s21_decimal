@@ -2,7 +2,7 @@
 
 #include "s21_decimal.h"
 
-static int compare_mantissa(s21_decimal value_2, s21_decimal* remainder) {
+static int s21_compare_mantissa(s21_decimal value_2, s21_decimal* remainder) {
   int quotient = 0;
   if ((uint32_t)remainder->bits[2] > (uint32_t)value_2.bits[2]) {
     quotient = 1;
@@ -18,7 +18,7 @@ static int compare_mantissa(s21_decimal value_2, s21_decimal* remainder) {
   return quotient;
 }
 
-static uint32_t subtract_mantissa(s21_decimal value_2, s21_decimal* remainder) {
+static uint32_t s21_subtract_mantissa(s21_decimal value_2, s21_decimal* remainder) {
   uint64_t sub;
   uint32_t borrow = 0;
 
@@ -46,7 +46,7 @@ static uint32_t subtract_mantissa(s21_decimal value_2, s21_decimal* remainder) {
 }
 
 // первый цикл
-static void divide_integer_part(s21_decimal value_1, s21_decimal value_2,
+static void s21_divide_integer_part(s21_decimal value_1, s21_decimal value_2,
                                 s21_decimal* result, s21_decimal* remainder) {
   int i = 95;
   while (i >= 0) {
@@ -67,9 +67,9 @@ static void divide_integer_part(s21_decimal value_1, s21_decimal value_2,
     current = ((uint64_t)(uint32_t)remainder->bits[2] << 1) | carry;
     remainder->bits[2] = (uint32_t)current;
 
-    int x = compare_mantissa(value_2, remainder);
+    int x = s21_compare_mantissa(value_2, remainder);
     if (x) {
-      subtract_mantissa(value_2, remainder);
+      s21_subtract_mantissa(value_2, remainder);
     }
 
     current = ((uint64_t)(uint32_t)result->bits[0] << 1) | x;
@@ -85,7 +85,7 @@ static void divide_integer_part(s21_decimal value_1, s21_decimal value_2,
   }
 }
 
-static uint32_t multiply_mantissa_by_10(s21_decimal* remainder,
+static uint32_t s21_multiply_mantissa_by_10(s21_decimal* remainder,
                                         uint32_t digit) {
   uint64_t current = (uint64_t)(uint32_t)remainder->bits[0] * 10ULL + digit;
   remainder->bits[0] = (uint32_t)current;
@@ -102,7 +102,7 @@ static uint32_t multiply_mantissa_by_10(s21_decimal* remainder,
   return carry;
 }
 
-static void round_overflow_result(s21_decimal* result, s21_decimal remainder,
+static void s21_round_overflow_result(s21_decimal* result, s21_decimal remainder,
                                   uint32_t remainder_10, int* res) {
   if (remainder_10 > 5 || (remainder_10 == 5 &&
                            (((uint32_t)result->bits[0] & 1) ||
@@ -117,14 +117,14 @@ static void round_overflow_result(s21_decimal* result, s21_decimal remainder,
   }
 }
 // второй цикл
-static void calculate_fraction_part(s21_decimal value_2, s21_decimal* result,
+static void s21_calculate_fraction_part(s21_decimal value_2, s21_decimal* result,
                                     s21_decimal* remainder, int* scale,
                                     int* overflow, int* res) {
   while ((remainder->bits[0] != 0 || remainder->bits[1] != 0 ||
           remainder->bits[2] != 0) &&
          *scale < 28 && *res == 0 && *overflow == 0) {
     uint32_t remainder_high = 0;
-    uint32_t carry = multiply_mantissa_by_10(remainder, 0);
+    uint32_t carry = s21_multiply_mantissa_by_10(remainder, 0);
 
     if (carry != 0) {
       remainder_high = carry;
@@ -137,29 +137,29 @@ static void calculate_fraction_part(s21_decimal value_2, s21_decimal* result,
       greater = 0;
       if (remainder_high != 0) {
         greater = 1;
-      } else if (compare_mantissa(value_2, remainder)) {
+      } else if (s21_compare_mantissa(value_2, remainder)) {
         greater = 1;
       }
       if (greater) {
-        uint32_t borrow = subtract_mantissa(value_2, remainder);
+        uint32_t borrow = s21_subtract_mantissa(value_2, remainder);
         remainder_high -= borrow;
         digit++;
       }
     }
 
-    carry = multiply_mantissa_by_10(result, digit);
+    carry = s21_multiply_mantissa_by_10(result, digit);
 
     (*scale)++;
     if (carry != 0) {
       *overflow = 1;
       uint32_t remainder_10 = s21_divide_by_10_with_high(result, carry);
-      round_overflow_result(result, *remainder, remainder_10, res);
+      s21_round_overflow_result(result, *remainder, remainder_10, res);
       (*scale)--;
     }
   }
 }
 
-static int compare_twice_remainder(s21_decimal remainder, s21_decimal divisor) {
+static int s21_compare_twice_remainder(s21_decimal remainder, s21_decimal divisor) {
   int res = 0;
   uint64_t current;
   uint32_t carry;
@@ -199,7 +199,7 @@ static int compare_twice_remainder(s21_decimal remainder, s21_decimal divisor) {
   return res;
 }
 
-static uint32_t divide_by_10_with_bankers_rounding(s21_decimal* result) {
+static uint32_t s21_divide_by_10_with_bankers_rounding(s21_decimal* result) {
   uint32_t remainder = s21_divide_by_10(result);
 
   if ((remainder > 5) || (remainder == 5 && ((uint32_t)result->bits[0] & 1))) {
@@ -209,21 +209,21 @@ static uint32_t divide_by_10_with_bankers_rounding(s21_decimal* result) {
 }
 
 // проверка на scale == 28 и остаток != 0 и overflow != 1
-static void round_division_result(s21_decimal* result, s21_decimal remainder,
+static void s21_round_division_result(s21_decimal* result, s21_decimal remainder,
                                   s21_decimal value_2, int* scale, int overflow,
                                   int* res) {
   if (*scale == 28 &&
       (remainder.bits[0] != 0 || remainder.bits[1] != 0 ||
        remainder.bits[2] != 0) &&
       overflow != 1) {
-    int comparison = compare_twice_remainder(remainder, value_2);
+    int comparison = s21_compare_twice_remainder(remainder, value_2);
     if (comparison > 0 ||
         (comparison == 0 && ((uint32_t)result->bits[0] & 1))) {
       s21_decimal temp = *result;
       if (s21_add_one(&temp) == 0) {
         *result = temp;
       } else {
-        divide_by_10_with_bankers_rounding(result);
+        s21_divide_by_10_with_bankers_rounding(result);
         (*scale)--;
       }
     }
@@ -233,7 +233,7 @@ static void round_division_result(s21_decimal* result, s21_decimal remainder,
   }
 }
 
-static void normalize_negative_scale(s21_decimal* result, int* scale,
+static void s21_normalize_negative_scale(s21_decimal* result, int* scale,
                                      int* res) {
   while (*scale < 0 && *res == 0) {
     uint64_t current = (uint64_t)(uint32_t)result->bits[0] * 10ULL;
@@ -269,7 +269,7 @@ int s21_div(s21_decimal value_1, s21_decimal value_2, s21_decimal* result) {
       res = 3;
     }
     if (res == 0) {
-      divide_integer_part(value_1, value_2, result, &remainder);
+      s21_divide_integer_part(value_1, value_2, result, &remainder);
     }
     int scale = 0;
     if (res == 0) {
@@ -277,10 +277,10 @@ int s21_div(s21_decimal value_1, s21_decimal value_2, s21_decimal* result) {
       int scale_2 = s21_get_scale(value_2);
       scale = (int)scale_1 - (int)scale_2;
     }
-    calculate_fraction_part(value_2, result, &remainder, &scale, &overflow,
+    s21_calculate_fraction_part(value_2, result, &remainder, &scale, &overflow,
                             &res);
-    normalize_negative_scale(result, &scale, &res);
-    round_division_result(result, remainder, value_2, &scale, overflow, &res);
+    s21_normalize_negative_scale(result, &scale, &res);
+    s21_round_division_result(result, remainder, value_2, &scale, overflow, &res);
 
     int sign_1 = s21_get_sign(value_1);
     int sign_2 = s21_get_sign(value_2);
