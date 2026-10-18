@@ -21,7 +21,6 @@ static s21_decimal make_decimal(uint32_t bits0, uint32_t bits1, uint32_t bits2,
   return value;
 }
 
-/* expected: -1 (a < b), 0 (a == b), 1 (a > b) */
 static void check_compare(s21_decimal a, s21_decimal b, int expected) {
   ck_assert_int_eq(s21_is_less(a, b), expected < 0);
   ck_assert_int_eq(s21_is_less_or_equal(a, b), expected <= 0);
@@ -116,10 +115,6 @@ START_TEST(test_compare_max_values) {
                 make_decimal(MAX_U32, MAX_U32, MAX_U32, 0, 0), -1);
 }
 END_TEST
-
-/* ============================================================
- * SUITE
- * ============================================================ */
 
 Suite* s21_compare_suite(void) {
   Suite* suite = suite_create("s21_compare");

@@ -137,6 +137,7 @@ START_TEST(test_mul_zero_keeps_scale_sum) {
 END_TEST
 
 START_TEST(test_mul_multiword_product) {
+  /* (2^32 - 1)^2 = 2^64 - 2^33 + 1 */
   s21_decimal result = {{0}};
   s21_decimal expected = make_decimal(1, 0xFFFFFFFEU, 0, 0, 0);
 
